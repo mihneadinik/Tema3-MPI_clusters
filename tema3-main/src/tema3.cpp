@@ -423,7 +423,7 @@ void type0_computations(int rank, int num_procs, int assigned_coordinator, int v
         print_vec(vec, vec_elems);
     }
 
-    // coordinator
+    // other coordinators
     if (rank > 0 && rank < num_coord) {
         std::unordered_map<int, int> worker_start_indices;
         int start_indexes[num_coord] = {0}, tasks_per_cluster[num_coord] = {0};
@@ -521,7 +521,7 @@ void broken_computations(int rank, int num_procs, int assigned_coordinator, int 
         print_vec(vec, vec_elems);
     }
 
-    // coordinator
+    // other coordinators
     if (rank > 0 && rank < num_coord) {
         std::unordered_map<int, int> worker_start_indices;
         int start_indexes[num_coord] = {0}, tasks_per_cluster[num_coord] = {0};
@@ -566,16 +566,18 @@ void broken_computations(int rank, int num_procs, int assigned_coordinator, int 
     }
 }
 
+/*
+Topology matrix model
+rank_leader     nr_workers      workers
+0:              1               4
+1:              2               5, 9
+2:              2               6, 7
+3:              3               8, 10, 11
+*/
+
 int main(int argc, char * argv[]) {
 	int rank, num_procs;
     int vec_elems = 0, type = 0;
-    /*
-        rank_leader     nr_workers      workers
-        0:              1               4
-        1:              2               5, 9
-        2:              2               6, 7
-        3:              3               8, 10, 11
-    */
 
 	MPI_Init(&argc, &argv);
 
@@ -596,9 +598,6 @@ int main(int argc, char * argv[]) {
     if (rank < num_coord) {
         read_data(rank, topology);
     }
-
-    // wait for all leaders to finish inits
-    MPI_Barrier(MPI_COMM_WORLD);
 
     switch (type)
     {

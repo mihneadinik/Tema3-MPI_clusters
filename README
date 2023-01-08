@@ -1,0 +1,53 @@
+Dinica Mihnea 333CA
+
+Workflow tema3:
+* fiecare proces coordonator citeste fisierul de intrare asignat si isi completeaza
+bucata din topologie corespunzatoare workerilor sai (exemplu topologie inainte de main)
+* in functie de tipul inelului coordonatorilor, distingem 2 modele de comunicare: inel
+(corespunzator tipului 0) si secvential cu intoarcere la sursa (tip 1 si 2)
+* in toate cazurile, proceselor worker vor astepta sa primeasca o topologie, ulterior
+descopera si salveaza cine este coordonatorul lor si printeaza topologia primita
+* in cazul comunicatiei inel, este nevoie de 2 cicluri pentru ca toate procesele
+coordonator sa primeasca o topologie completa: procesul 0 isi trimite topologia la
+procesul 1, acesta o completeaza cu bucata sa si o trimite la procesul 2, acesta in
+mod identic la procesul 3, acesta devine primul care cunoaste intreaga topologie chiar
+inainte de incheierea primului inel; trimite topologia completa la procesul 0 pentru a
+incheia inelul, iar acesta porneste o noua comunicatie inel catre toti coordonatorii
+pentru a le transmite topologia completa; odata ce un coordonator isi completeaza topologia,
+o afiseaza si o trimite workerilor sai
+* in cazul comunicatiei secventiale (partitie sau inel intrerupt) comunicarea se desfasoara
+in mod secvential: identificam 2 capete ale traseului (procesul 0 in stanga, iar in dreapta
+procesul 1 sau 2 daca avem partitionare) -> acestea vor primi si trimite informatii o singura
+data, celelalte procese fac 4 transmiteri: o serie pentru a propaga informatia si o alta pentru
+a salva topologia completa; exemplu de parcurgere: 0 -> 3 -> 2 -> 1 pana aici informatia a fost
+actualizata pe masura ce s-a propagat, iar procesul 1 a ajuns sa cunoasca intreaga topologie;
+ulterior incepe o propagare inversa pentru a transmite topologia finala celorlalti coordonatori:
+1 -> 2 -> 3 -> 0 (se observa ca procesele dintre capete transmit informatia de 2 ori)
+* particularitatea in cazul partitiei este ca procesul exclus nu mai comunica cu celelalte, deci
+nu-si mai trimite bucata dinn topologie in cadrul comunicarii si nici nu mai primeste topologiile
+celorlalti coordonatori; de asemenea capatul drept din comunicarea secventiala se muta spre stanga
+* in ceea ce priveste calculele efectuate pe vector, procesele worker vor astepta sa primeasca de
+la coordonator numarul de operatii pe care urmeaza sa le proceseze si elemente pe care le vor
+modifica, ulterior trimit inapoi un vector cu toate elementele prelucrate si numarul de elemente
+prelucrate
+* procesul 0 creeaza un vector conform indicatiilor din cerinta si efectueaza o serie de calcule
+necesare coordonarii activitatii celorlalte procese: numara procesele worker pentru a afla
+cantitatea de munca asignabila fiecaruia, astfel incat munca sa fie impartita cat mai uniform;
+ulterior calculeaza pentru fiecare cluster cate iteratii va avea de facut in functie de workerii
+asignati lui; pentru a uniformiza cantitatea de prelucrari efectuate, acestea se vor aproxima la
+intregul superior, astfel incat workerii din ultimul cluster sa nu ramana cu mai multe operatii
+decat ceilalti ex: 12 elemente si 8 workeri => 1.5 elemente de prelucrat per worker; daca s-ar
+aproxima inferior, primul cluster prelucreaza 1 element, al doilea si al treilea 2 elemente, iar
+ultimul ar ramane cu 7 elemente, deci workerii lui ar prelucra aprox 2.3 elemente fiecare, mai
+mult decat dublu fata de ceilalti. Prin aproximare superioara: primul cluster 2 elemente,
+clusterele 2 si 3 3 elemente fiecare, iar ultimul cluster 4 elemente, rezultand un raport mult
+mai egalizat intre workeri
+* cand inelul dintre coordonatori este intreg (tipul 0), acestia primesc vectorul de lucru, impart
+activitatile fiecarui worker si asteapta raspunsul lor pentru a reasambla vectorul si il trimit
+mai departe; astfel, la sfarsitul inelului, coordonatorul care a initiat activitatea va primi
+vectorul final si il va afisa
+* cand inelul dintre coordonatori este intrerupt (tipurile 1 si 2) comunicarea se face asemanator
+topologiei, fiind secventiala cu revenire la sursa; cand un coordonator primeste vectorul de procesat,
+mai intai il paseaza urmatorului proces coordonator si apoi asigneaza activitatile workerilor sai, iar
+in momentul in care vectorul se intoarce de la coordonatorul succesor il va reasambla cu rezultatele
+intoarse de workeri, scutind timpii morti de asteptare a raspunsului workerilor

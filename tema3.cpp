@@ -251,7 +251,7 @@ void worker_receive_topology(int rank, int num_procs, int** topology, int* assig
     print_topology(rank, num_procs, topology);
 }
 
-void circle_topology(int rank, int num_procs, int* assigned_coordinator, int** topology) {
+void ring_topology(int rank, int num_procs, int* assigned_coordinator, int** topology) {
     if (rank >= num_coord) {
         worker_receive_topology(rank, num_procs, topology, assigned_coordinator);
     } else {
@@ -423,7 +423,7 @@ void type0_computations(int rank, int num_procs, int assigned_coordinator, int v
         print_vec(vec, vec_elems);
     }
 
-    // coordinator
+    // other coordinators
     if (rank > 0 && rank < num_coord) {
         std::unordered_map<int, int> worker_start_indices;
         int start_indexes[num_coord] = {0}, tasks_per_cluster[num_coord] = {0};
@@ -521,7 +521,7 @@ void broken_computations(int rank, int num_procs, int assigned_coordinator, int 
         print_vec(vec, vec_elems);
     }
 
-    // coordinator
+    // other coordinators
     if (rank > 0 && rank < num_coord) {
         std::unordered_map<int, int> worker_start_indices;
         int start_indexes[num_coord] = {0}, tasks_per_cluster[num_coord] = {0};
@@ -599,13 +599,10 @@ int main(int argc, char * argv[]) {
         read_data(rank, topology);
     }
 
-    // wait for all leaders to finish inits
-    MPI_Barrier(MPI_COMM_WORLD);
-
     switch (type)
     {
     case 0:
-        circle_topology(rank, num_procs, &assigned_coordinator, topology);
+        ring_topology(rank, num_procs, &assigned_coordinator, topology);
         MPI_Barrier(MPI_COMM_WORLD);
         type0_computations(rank, num_procs, assigned_coordinator, vec_elems, topology, -1);
         break;
